@@ -188,6 +188,10 @@ check_bans();
 // Update online list
 update_users_online();
 
+// Update last_visit_ip for each page visit of logged in users
+if (!$pun_user['is_guest'])
+    $db->query('UPDATE '.$db->prefix.'users SET last_visit_ip=\''.$db->escape(get_real_remote_address()).'\' WHERE id='.$pun_user['id']) or error('Unable to update user data', __FILE__, __LINE__, $db->error());
+
 // Check to see if we logged in without a cookie being set
 if ($pun_user['is_guest'] && isset($_GET['login']))
 	message($lang_common['No cookie']);

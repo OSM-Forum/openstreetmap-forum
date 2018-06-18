@@ -1175,10 +1175,16 @@ function check_csrf($token)
 }
 
 
+// Return dummy address for standard logging functions
+function get_remote_address()
+{
+	return '0.0.0.0';
+}
+
 //
 // Try to determine the correct remote IP-address
 //
-function get_remote_address()
+function get_real_remote_address()
 {
 	$remote_addr = $_SERVER['REMOTE_ADDR'];
 
