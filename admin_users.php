@@ -20,149 +20,8 @@ if (!$pun_user['is_admmod'])
 // Load the admin_users.php language file
 require PUN_ROOT.'lang/'.$admin_language.'/admin_users.php';
 
-if (isset($_GET['show_users']))
-{
-	$ip = pun_trim($_GET['show_users']);
-
-	if (!@preg_match('%^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$%', $ip) && !@preg_match('%^((([0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4})|(([0-9A-Fa-f]{1,4}:){6}:[0-9A-Fa-f]{1,4})|(([0-9A-Fa-f]{1,4}:){5}:([0-9A-Fa-f]{1,4}:)?[0-9A-Fa-f]{1,4})|(([0-9A-Fa-f]{1,4}:){4}:([0-9A-Fa-f]{1,4}:){0,2}[0-9A-Fa-f]{1,4})|(([0-9A-Fa-f]{1,4}:){3}:([0-9A-Fa-f]{1,4}:){0,3}[0-9A-Fa-f]{1,4})|(([0-9A-Fa-f]{1,4}:){2}:([0-9A-Fa-f]{1,4}:){0,4}[0-9A-Fa-f]{1,4})|(([0-9A-Fa-f]{1,4}:){6}((\b((25[0-5])|(1\d{2})|(2[0-4]\d)|(\d{1,2}))\b)\.){3}(\b((25[0-5])|(1\d{2})|(2[0-4]\d)|(\d{1,2}))\b))|(([0-9A-Fa-f]{1,4}:){0,5}:((\b((25[0-5])|(1\d{2})|(2[0-4]\d)|(\d{1,2}))\b)\.){3}(\b((25[0-5])|(1\d{2})|(2[0-4]\d)|(\d{1,2}))\b))|(::([0-9A-Fa-f]{1,4}:){0,5}((\b((25[0-5])|(1\d{2})|(2[0-4]\d)|(\d{1,2}))\b)\.){3}(\b((25[0-5])|(1\d{2})|(2[0-4]\d)|(\d{1,2}))\b))|([0-9A-Fa-f]{1,4}::([0-9A-Fa-f]{1,4}:){0,5}[0-9A-Fa-f]{1,4})|(::([0-9A-Fa-f]{1,4}:){0,6}[0-9A-Fa-f]{1,4})|(([0-9A-Fa-f]{1,4}:){1,7}:))$%', $ip))
-		message($lang_admin_users['Bad IP message']);
-
-	// Fetch user count
-	$result = $db->query('SELECT DISTINCT poster_id, poster FROM '.$db->prefix.'posts WHERE poster_ip=\''.$db->escape($ip).'\'') or error('Unable to fetch post info', __FILE__, __LINE__, $db->error());
-	$num_users = $db->num_rows($result);
-
-	// Determine the user offset (based on $_GET['p'])
-	$num_pages = ceil($num_users / 50);
-
-	$p = (!isset($_GET['p']) || $_GET['p'] <= 1 || $_GET['p'] > $num_pages) ? 1 : intval($_GET['p']);
-	$start_from = 50 * ($p - 1);
-
-	// Generate paging links
-	$paging_links = '<span class="pages-label">'.$lang_common['Pages'].' </span>'.paginate($num_pages, $p, 'admin_users.php?show_users='.$ip);
-
-	$page_title = array(pun_htmlspecialchars($pun_config['o_board_title']), $lang_admin_common['Admin'], $lang_admin_common['Users'], $lang_admin_users['Results head']);
-	define('PUN_ACTIVE_PAGE', 'admin');
-	require PUN_ROOT.'header.php';
-
-?>
-<div class="linkst">
-	<div class="inbox crumbsplus">
-		<ul class="crumbs">
-			<li><a href="admin_index.php"><?php echo $lang_admin_common['Admin'].' '.$lang_admin_common['Index'] ?></a></li>
-			<li><span>»&#160;</span><a href="admin_users.php"><?php echo $lang_admin_common['Users'] ?></a></li>
-			<li><span>»&#160;</span><strong><?php echo $lang_admin_users['Results head'] ?></strong></li>
-		</ul>
-		<div class="pagepost">
-			<p class="pagelink"><?php echo $paging_links ?></p>
-		</div>
-		<div class="clearer"></div>
-	</div>
-</div>
-
-<div id="users2" class="blocktable">
-	<h2><span><?php echo $lang_admin_users['Results head'] ?></span></h2>
-	<div class="box">
-		<div class="inbox">
-			<table>
-			<thead>
-				<tr>
-					<th class="tcl" scope="col"><?php echo $lang_admin_users['Results username head'] ?></th>
-					<th class="tc2" scope="col"><?php echo $lang_admin_users['Results e-mail head'] ?></th>
-					<th class="tc3" scope="col"><?php echo $lang_admin_users['Results title head'] ?></th>
-					<th class="tc4" scope="col"><?php echo $lang_admin_users['Results posts head'] ?></th>
-					<th class="tc5" scope="col"><?php echo $lang_admin_users['Results admin note head'] ?></th>
-					<th class="tcr" scope="col"><?php echo $lang_admin_users['Results actions head'] ?></th>
-				</tr>
-			</thead>
-			<tbody>
-<?php
-
-	$result = $db->query('SELECT DISTINCT poster_id, poster FROM '.$db->prefix.'posts WHERE poster_ip=\''.$db->escape($ip).'\' ORDER BY poster ASC LIMIT '.$start_from.', 50') or error('Unable to fetch post info', __FILE__, __LINE__, $db->error());
-	$num_posts = $db->num_rows($result);
-
-	if ($num_posts)
-	{
-		$posters = $poster_ids = array();
-		while ($cur_poster = $db->fetch_assoc($result))
-		{
-			$posters[] = $cur_poster;
-			$poster_ids[] = $cur_poster['poster_id'];
-		}
-
-		$result = $db->query('SELECT u.id, u.username, u.email, u.title, u.num_posts, u.admin_note, g.g_id, g.g_user_title FROM '.$db->prefix.'users AS u INNER JOIN '.$db->prefix.'groups AS g ON g.g_id=u.group_id WHERE u.id>1 AND u.id IN('.implode(',', $poster_ids).')') or error('Unable to fetch user info', __FILE__, __LINE__, $db->error());
-
-		$user_data = array();
-		while ($cur_user = $db->fetch_assoc($result))
-			$user_data[$cur_user['id']] = $cur_user;
-
-		// Loop through users and print out some info
-		foreach ($posters as $cur_poster)
-		{
-			if (isset($user_data[$cur_poster['poster_id']]))
-			{
-				$user_title = get_title($user_data[$cur_poster['poster_id']]);
-
-				$actions = '<a href="search.php?action=show_user_posts&amp;user_id='.$user_data[$cur_poster['poster_id']]['id'].'">'.$lang_admin_users['Results show posts link'].'</a>';
-
-?>
-				<tr>
-					<td class="tcl"><?php echo '<a href="profile.php?id='.$user_data[$cur_poster['poster_id']]['id'].'">'.pun_htmlspecialchars($user_data[$cur_poster['poster_id']]['username']).'</a>' ?></td>
-					<td class="tc2"><a href="mailto:<?php echo pun_htmlspecialchars($user_data[$cur_poster['poster_id']]['email']) ?>"><?php echo pun_htmlspecialchars($user_data[$cur_poster['poster_id']]['email']) ?></a></td>
-					<td class="tc3"><?php echo $user_title ?></td>
-					<td class="tc4"><?php echo forum_number_format($user_data[$cur_poster['poster_id']]['num_posts']) ?></td>
-					<td class="tc5"><?php echo ($user_data[$cur_poster['poster_id']]['admin_note'] != '') ? pun_htmlspecialchars($user_data[$cur_poster['poster_id']]['admin_note']) : '&#160;' ?></td>
-					<td class="tcr"><?php echo $actions ?></td>
-				</tr>
-<?php
-
-			}
-			else
-			{
-
-?>
-				<tr>
-					<td class="tcl"><?php echo pun_htmlspecialchars($cur_poster['poster']) ?></td>
-					<td class="tc2">&#160;</td>
-					<td class="tc3"><?php echo $lang_admin_users['Results guest'] ?></td>
-					<td class="tc4">&#160;</td>
-					<td class="tc5">&#160;</td>
-					<td class="tcr">&#160;</td>
-				</tr>
-<?php
-
-			}
-		}
-	}
-	else
-		echo "\t\t\t\t".'<tr><td class="tcl" colspan="6">'.$lang_admin_users['Results no IP found'].'</td></tr>'."\n";
-
-?>
-			</tbody>
-			</table>
-		</div>
-	</div>
-</div>
-
-<div class="linksb">
-	<div class="inbox crumbsplus">
-		<div class="pagepost">
-			<p class="pagelink"><?php echo $paging_links ?></p>
-		</div>
-		<ul class="crumbs">
-			<li><a href="admin_index.php"><?php echo $lang_admin_common['Admin'].' '.$lang_admin_common['Index'] ?></a></li>
-			<li><span>»&#160;</span><a href="admin_users.php"><?php echo $lang_admin_common['Users'] ?></a></li>
-			<li><span>»&#160;</span><strong><?php echo $lang_admin_users['Results head'] ?></strong></li>
-		</ul>
-		<div class="clearer"></div>
-	</div>
-</div>
-<?php
-	require PUN_ROOT.'footer.php';
-}
-
-
 // Move multiple users to other user groups
-else if (isset($_POST['move_users']) || isset($_POST['move_users_comply']))
+if (isset($_POST['move_users']) || isset($_POST['move_users_comply']))
 {
 	if ($pun_user['g_id'] > PUN_ADMIN)
 		message($lang_common['No permission'], false, '403 Forbidden');
@@ -655,7 +514,7 @@ else if (isset($_GET['find_user']))
 	$like_command = ($db_type == 'pgsql') ? 'ILIKE' : 'LIKE';
 	foreach ($form as $key => $input)
 	{
-		if ($input != '' && in_array($key, array('username', 'email', 'title', 'realname', 'url', 'jabber', 'icq', 'msn', 'aim', 'yahoo', 'location', 'signature', 'admin_note')))
+		if ($input != '' && in_array($key, array('username', 'email', 'title', 'realname', 'url', 'jabber', 'icq', 'msn', 'aim', 'yahoo', 'location', 'signature', 'admin_note', 'last_seen_ip')))
 		{
 			$conditions[] = 'u.'.$db->escape($key).' '.$like_command.' \''.$db->escape(str_replace('*', '%', $input)).'\'';
 			$query_str[] = 'form%5B'.$key.'%5D='.urlencode($input);
@@ -940,31 +799,16 @@ else
 										</select>
 									</td>
 								</tr>
-							</table>
-						</div>
-					</fieldset>
-				</div>
-				<p class="submitend"><input type="submit" name="find_user" value="<?php echo $lang_admin_users['Submit search'] ?>" tabindex="25" /></p>
-			</form>
-		</div>
-
-		<h2 class="block2"><span><?php echo $lang_admin_users['IP search head'] ?></span></h2>
-		<div class="box">
-			<form method="get" action="admin_users.php">
-				<div class="inform">
-					<fieldset>
-						<legend><?php echo $lang_admin_users['IP search subhead'] ?></legend>
-						<div class="infldset">
-							<table class="aligntop">
+                                                                
 								<tr>
-									<th scope="row"><?php echo $lang_admin_users['IP address label'] ?><div><input type="submit" value="<?php echo $lang_admin_users['Find IP address'] ?>" tabindex="26" /></div></th>
-									<td><input type="text" name="show_users" size="18" maxlength="15" tabindex="24" />
-									<span><?php echo $lang_admin_users['IP address help'] ?></span></td>
+									<th scope="row"><?php echo $lang_admin_users['IP address label'] ?></th>
+									<td><input type="text" name="form[last_seen_ip]" size="30" maxlength="10" tabindex="14" /></td>
 								</tr>
 							</table>
 						</div>
 					</fieldset>
 				</div>
+				<p class="submitend"><input type="submit" name="find_user" value="<?php echo $lang_admin_users['Submit search'] ?>" tabindex="25" /></p>
 			</form>
 		</div>
 	</div>
