@@ -121,7 +121,6 @@ if (isset($_REQUEST['add_ban']) || isset($_GET['edit_ban']))
 									</td>
 								</tr>
 							</table>
-							<p class="topspace"><strong class="warntext"><?php if ($ban_user != '' && isset($user_id)) printf(' '.$lang_admin_bans['IP help link'], '<a href="admin_users.php?ip_stats='.$user_id.'">'.$lang_admin_common['here'].'</a>') ?></strong></p>
 						</div>
 					</fieldset>
 				</div>

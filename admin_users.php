@@ -20,107 +20,6 @@ if (!$pun_user['is_admmod'])
 // Load the admin_users.php language file
 require PUN_ROOT.'lang/'.$admin_language.'/admin_users.php';
 
-// Show IP statistics for a certain user ID
-if (isset($_GET['ip_stats']))
-{
-	$ip_stats = intval($_GET['ip_stats']);
-	if ($ip_stats < 1)
-		message($lang_common['Bad request'], false, '404 Not Found');
-
-	// Fetch ip count
-	$result = $db->query('SELECT poster_ip, MAX(posted) AS last_used FROM '.$db->prefix.'posts WHERE poster_id='.$ip_stats.' GROUP BY poster_ip') or error('Unable to fetch post info', __FILE__, __LINE__, $db->error());
-	$num_ips = $db->num_rows($result);
-
-	// Determine the ip offset (based on $_GET['p'])
-	$num_pages = ceil($num_ips / 50);
-
-	$p = (!isset($_GET['p']) || $_GET['p'] <= 1 || $_GET['p'] > $num_pages) ? 1 : intval($_GET['p']);
-	$start_from = 50 * ($p - 1);
-
-	// Generate paging links
-	$paging_links = '<span class="pages-label">'.$lang_common['Pages'].' </span>'.paginate($num_pages, $p, 'admin_users.php?ip_stats='.$ip_stats );
-
-	$page_title = array(pun_htmlspecialchars($pun_config['o_board_title']), $lang_admin_common['Admin'], $lang_admin_common['Users'], $lang_admin_users['Results head']);
-	define('PUN_ACTIVE_PAGE', 'admin');
-	require PUN_ROOT.'header.php';
-
-?>
-<div class="linkst">
-	<div class="inbox crumbsplus">
-		<ul class="crumbs">
-			<li><a href="admin_index.php"><?php echo $lang_admin_common['Admin'].' '.$lang_admin_common['Index'] ?></a></li>
-			<li><span>»&#160;</span><a href="admin_users.php"><?php echo $lang_admin_common['Users'] ?></a></li>
-			<li><span>»&#160;</span><strong><?php echo $lang_admin_users['Results head'] ?></strong></li>
-		</ul>
-		<div class="pagepost">
-			<p class="pagelink"><?php echo $paging_links ?></p>
-		</div>
-		<div class="clearer"></div>
-	</div>
-</div>
-
-<div id="users1" class="blocktable">
-	<h2><span><?php echo $lang_admin_users['Results head'] ?></span></h2>
-	<div class="box">
-		<div class="inbox">
-			<table>
-			<thead>
-				<tr>
-					<th class="tcl" scope="col"><?php echo $lang_admin_users['Results IP address head'] ?></th>
-					<th class="tc2" scope="col"><?php echo $lang_admin_users['Results last used head'] ?></th>
-					<th class="tc3" scope="col"><?php echo $lang_admin_users['Results times found head'] ?></th>
-					<th class="tcr" scope="col"><?php echo $lang_admin_users['Results action head'] ?></th>
-				</tr>
-			</thead>
-			<tbody>
-<?php
-
-	$result = $db->query('SELECT poster_ip, MAX(posted) AS last_used, COUNT(id) AS used_times FROM '.$db->prefix.'posts WHERE poster_id='.$ip_stats.' GROUP BY poster_ip ORDER BY last_used DESC LIMIT '.$start_from.', 50') or error('Unable to fetch post info', __FILE__, __LINE__, $db->error());
-	if ($db->num_rows($result))
-	{
-		while ($cur_ip = $db->fetch_assoc($result))
-		{
-
-?>
-				<tr>
-					<td class="tcl"><a href="moderate.php?get_host=<?php echo pun_htmlspecialchars($cur_ip['poster_ip']) ?>"><?php echo pun_htmlspecialchars($cur_ip['poster_ip']) ?></a></td>
-					<td class="tc2"><?php echo format_time($cur_ip['last_used']) ?></td>
-					<td class="tc3"><?php echo $cur_ip['used_times'] ?></td>
-					<td class="tcr"><a href="admin_users.php?show_users=<?php echo pun_htmlspecialchars($cur_ip['poster_ip']) ?>"><?php echo $lang_admin_users['Results find more link'] ?></a></td>
-				</tr>
-<?php
-
-		}
-	}
-	else
-		echo "\t\t\t\t".'<tr><td class="tcl" colspan="4">'.$lang_admin_users['Results no posts found'].'</td></tr>'."\n";
-
-?>
-			</tbody>
-			</table>
-		</div>
-	</div>
-</div>
-
-<div class="linksb">
-	<div class="inbox crumbsplus">
-		<div class="pagepost">
-			<p class="pagelink"><?php echo $paging_links ?></p>
-		</div>
-		<ul class="crumbs">
-			<li><a href="admin_index.php"><?php echo $lang_admin_common['Admin'].' '.$lang_admin_common['Index'] ?></a></li>
-			<li><span>»&#160;</span><a href="admin_users.php"><?php echo $lang_admin_common['Users'] ?></a></li>
-			<li><span>»&#160;</span><strong><?php echo $lang_admin_users['Results head'] ?></strong></li>
-		</ul>
-		<div class="clearer"></div>
-	</div>
-</div>
-<?php
-
-	require PUN_ROOT.'footer.php';
-}
-
-
 if (isset($_GET['show_users']))
 {
 	$ip = pun_trim($_GET['show_users']);
@@ -203,7 +102,7 @@ if (isset($_GET['show_users']))
 			{
 				$user_title = get_title($user_data[$cur_poster['poster_id']]);
 
-				$actions = '<a href="admin_users.php?ip_stats='.$user_data[$cur_poster['poster_id']]['id'].'">'.$lang_admin_users['Results view IP link'].'</a> | <a href="search.php?action=show_user_posts&amp;user_id='.$user_data[$cur_poster['poster_id']]['id'].'">'.$lang_admin_users['Results show posts link'].'</a>';
+				$actions = '<a href="search.php?action=show_user_posts&amp;user_id='.$user_data[$cur_poster['poster_id']]['id'].'">'.$lang_admin_users['Results show posts link'].'</a>';
 
 ?>
 				<tr>
@@ -848,7 +747,7 @@ else if (isset($_GET['find_user']))
 			if (($user_data['g_id'] == '' || $user_data['g_id'] == PUN_UNVERIFIED) && $user_title != $lang_common['Banned'])
 				$user_title = '<span class="warntext">'.$lang_admin_users['Not verified'].'</span>';
 
-			$actions = '<a href="admin_users.php?ip_stats='.$user_data['id'].'">'.$lang_admin_users['Results view IP link'].'</a> | <a href="search.php?action=show_user_posts&amp;user_id='.$user_data['id'].'">'.$lang_admin_users['Results show posts link'].'</a>';
+			$actions = '<a href="search.php?action=show_user_posts&amp;user_id='.$user_data['id'].'">'.$lang_admin_users['Results show posts link'].'</a>';
 
 ?>
 				<tr>
