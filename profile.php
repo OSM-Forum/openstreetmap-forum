@@ -786,7 +786,7 @@ else if (isset($_POST['form_sent']))
 					$form['num_posts'] = intval($_POST['num_posts']);
 			}
 
-			if ($pun_config['o_regs_verify'] == '0' || $pun_user['is_admmod'])
+			if (($id == $pun_user['id'] && $pun_config['o_regs_verify'] == '0') || $pun_user['g_id'] == PUN_ADMIN)
 			{
 				require PUN_ROOT.'include/email.php';
 
@@ -1265,7 +1265,11 @@ else
 			else
 				$username_field = '<p>'.sprintf($lang_profile['Username info'], pun_htmlspecialchars($user['username'])).'</p>'."\n";
 
-			$email_field = '<label class="required"><strong>'.$lang_common['Email'].' <span>'.$lang_common['Required'].'</span></strong><br /><input type="text" name="req_email" value="'.pun_htmlspecialchars($user['email']).'" size="40" maxlength="80" /><br /></label><p><span class="email"><a href="misc.php?email='.$id.'">'.$lang_common['Send email'].'</a></span></p>'."\n";
+			if ($pun_user['g_id'] == PUN_ADMIN)
+                            $email_field = '<label class="required"><strong>'.$lang_common['Email'].' <span>'.$lang_common['Required'].'</span></strong><br /><input type="text" name="req_email" value="'.pun_htmlspecialchars($user['email']).'" size="40" maxlength="80" /><br /></label>';
+                        else
+                            $email_field = '<i>Email address only viewable for Administrators</i><br><br>';
+                        $email_field .= '<p><span class="email"><a href="misc.php?email='.$id.'">'.$lang_common['Send email'].'</a></span></p>'."\n";
 		}
 		else
 		{
